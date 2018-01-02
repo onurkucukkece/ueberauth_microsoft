@@ -16,6 +16,8 @@ defmodule Ueberauth.Strategy.Microsoft.OAuth do
     config = Application.get_env(:ueberauth, Ueberauth.Strategy.Microsoft.OAuth)
 
     @defaults
+      |> Keyword.replace(:authorize_url, org_authorize_url)
+      |> Keyword.replace(:token_url, org_token_url)
       |> Keyword.merge(config)
       |> Keyword.merge(opts)
       |> Client.new
@@ -44,5 +46,15 @@ defmodule Ueberauth.Strategy.Microsoft.OAuth do
       |> put_param(:client_secret, client.client_secret)
       |> put_header("Accept", "application/json")
       |> AuthCode.get_token(params, headers)
+  end
+
+  def org_token_url do
+    config = Application.get_env(:ueberauth, Ueberauth.Strategy.Microsoft.OAuth)
+    "https://login.microsoftonline.com/#{config[:tenant]}/oauth2/token"
+  end
+
+  def org_authorize_url do
+    config = Application.get_env(:ueberauth, Ueberauth.Strategy.Microsoft.OAuth)
+    "https://login.microsoftonline.com/#{config[:tenant]}/oauth2/authorize"
   end
 end
