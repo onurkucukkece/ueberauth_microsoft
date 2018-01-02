@@ -30,7 +30,8 @@ defmodule Ueberauth.Strategy.Microsoft do
   """
   def handle_callback!(%Plug.Conn{params: %{"code" => code}} = conn) do
     opts = [redirect_uri: callback_url(conn)]
-    client = OAuth.get_token!([code: code], opts)
+    # client = OAuth.get_token!([code: code], opts)
+    client = OAuth.get_token!([code: code, grant_type: "client_credentials", resource: "https://graph.microsoft.com"], opts)
     token = client.token
 
     case token.access_token do
