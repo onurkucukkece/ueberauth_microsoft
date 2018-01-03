@@ -98,6 +98,7 @@ defmodule Ueberauth.Strategy.Microsoft do
   end
 
   defp fetch_user(conn, client) do
+    IO.inspect conn.body_params
     conn = put_private(conn, :ms_token, client.token)
     path = "https://graph.microsoft.com/v1.0/me/"
 
