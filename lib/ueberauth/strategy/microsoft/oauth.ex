@@ -16,8 +16,8 @@ defmodule Ueberauth.Strategy.Microsoft.OAuth do
     config = Application.get_env(:ueberauth, Ueberauth.Strategy.Microsoft.OAuth)
 
     @defaults
-      |> Keyword.replace(:authorize_url, org_authorize_url)
-      |> Keyword.replace(:token_url, org_token_url)
+      |> Keyword.replace(:authorize_url, org_authorize_url())
+      |> Keyword.replace(:token_url, org_token_url())
       |> Keyword.merge(config)
       |> Keyword.merge(opts)
       |> Client.new
