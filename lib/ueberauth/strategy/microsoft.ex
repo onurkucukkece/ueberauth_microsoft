@@ -98,7 +98,20 @@ defmodule Ueberauth.Strategy.Microsoft do
   end
 
   defp fetch_user(conn, client) do
+    IO.puts "Dikkat token"
     IO.inspect conn.body_params
+    # IO.inspect JWTex.decode conn.body_params["id_token"], nil
+
+    # verify with RSA SHA256 algorithm
+    public = JsonWebToken.Algorithm.RsaUtil.public_key("/tmp", "key.pem")
+
+    opts = %{
+      alg: "RS256",
+      key: public
+    }
+
+    {:ok, claims} = JsonWebToken.verify(conn.body_params["id_token"], opts)
+    IO.inspect claims
     conn = put_private(conn, :ms_token, client.token)
     path = "https://graph.microsoft.com/v1.0/me/"
 
@@ -106,7 +119,7 @@ defmodule Ueberauth.Strategy.Microsoft do
       {:ok, %Response{status_code: 401}} ->
         set_errors!(conn, [error("token", "unauthorized")])
       {:ok, %Response{status_code: 200, body: response}} ->
-          put_private(conn, :ms_user, response)
+        put_private(conn, :ms_user, response)
       {:error, %Error{reason: reason}} ->
         set_errors!(conn, [error("OAuth2", reason)])
     end
@@ -118,5 +131,26 @@ defmodule Ueberauth.Strategy.Microsoft do
     conn
       |> options
       |> Keyword.get(key, default)
+  end
+
+  defp jwks_uri do
+    body = http_request("https://login.microsoftonline.com/common/.well-known/openid-configuration")
+    {status, list} = JSON.decode(body)
+    if status == :ok, do: list["jwks_uri"], else: nil
+  end
+
+  defp get_discovery_keys(url)do
+    list = http_request(url)
+    if status == :ok do
+      for item <- list["keys"] do
+        IO.puts item["x5c"]
+      end
+    end
+  end
+
+  defp http_request(url) do
+    {:ok, resp} = :httpc.request(:get, {to_charlist(url), []}, [], [])
+    {{_, 200, 'OK'}, _headers, body} = resp
+    body
   end
 end

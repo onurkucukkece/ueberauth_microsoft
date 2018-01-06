@@ -33,6 +33,8 @@ defmodule UeberauthMicrosoft.Mixfile do
     [
       {:oauth2, "~> 0.8", path: "../oauth2-master"},
       {:ueberauth, "~> 0.4"},
+      {:json, "~> 1.0"},
+      {:json_web_token, "~> 0.2"},
       {:ex_doc, ">= 0.14.0", only: :dev}
     ]
   end
