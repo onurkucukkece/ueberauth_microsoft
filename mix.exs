@@ -31,10 +31,11 @@ defmodule UeberauthMicrosoft.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
-      {:oauth2, "~> 0.8", path: "../oauth2-master"},
+      {:oauth2, "~> 0.8"},
       {:ueberauth, "~> 0.4"},
       {:json, "~> 1.0"},
       {:json_web_token, "~> 0.2"},
+      {:secure_random, "~> 0.5"},
       {:ex_doc, ">= 0.14.0", only: :dev}
     ]
   end
