@@ -98,9 +98,9 @@ defmodule Ueberauth.Strategy.Microsoft do
   end
 
   defp fetch_user(conn, client) do
-    IO.puts "Dikkat token"
     IO.inspect conn.body_params
     # IO.inspect JWTex.decode conn.body_params["id_token"], nil
+    # public_key = jwks_uri() |> get_discovery_keys |> formatted_cert |> decode_pem
 
     # verify with RSA SHA256 algorithm
     public = JsonWebToken.Algorithm.RsaUtil.public_key("/tmp", "key.pem")
@@ -111,18 +111,7 @@ defmodule Ueberauth.Strategy.Microsoft do
     }
 
     {:ok, claims} = JsonWebToken.verify(conn.body_params["id_token"], opts)
-    IO.inspect claims
-    conn = put_private(conn, :ms_token, client.token)
-    path = "https://graph.microsoft.com/v1.0/me/"
-
-    case OAuth2.Client.get(client, path) do
-      {:ok, %Response{status_code: 401}} ->
-        set_errors!(conn, [error("token", "unauthorized")])
-      {:ok, %Response{status_code: 200, body: response}} ->
-        put_private(conn, :ms_user, response)
-      {:error, %Error{reason: reason}} ->
-        set_errors!(conn, [error("OAuth2", reason)])
-    end
+    IO.puts claims[:upn]
   end
 
   defp option(conn, key) do
@@ -140,11 +129,12 @@ defmodule Ueberauth.Strategy.Microsoft do
   end
 
   defp get_discovery_keys(url)do
-    list = http_request(url)
+    list_body = http_request url
+    {status, list} = JSON.decode list_body
+
     if status == :ok do
-      for item <- list["keys"] do
-        IO.puts item["x5c"]
-      end
+      item = Enum.at(list["keys"], 0)
+      item["x5c"]
     end
   end
 
@@ -152,5 +142,31 @@ defmodule Ueberauth.Strategy.Microsoft do
     {:ok, resp} = :httpc.request(:get, {to_charlist(url), []}, [], [])
     {{_, 200, 'OK'}, _headers, body} = resp
     body
+  end
+
+  defp decode_pem(certificate) do
+    [entry] = :public_key.pem_decode certificate
+    pem_entry = :public_key.pem_entry_decode entry
+    public_key = pem_entry |> elem(1) |> elem(7) |> elem(2)
+     |> Base.encode64 |> formatted_key
+    rsa_key = :public_key.der_decode(:RSAPublicKey, public_key)
+  end
+
+  defp formatted_cert(cert) do
+    "-----BEGIN CERTIFICATE-----\n#{cert}\n-----END CERTIFICATE-----\n"
+  end
+  
+  defp formatted_key(key_string) do
+    IO.puts key_string
+    key_string = to_charlist(key_string) |> Enum.chunk(64) |> Enum.join("\n")
+    "-----BEGIN PUBLIC KEY-----\n#{key_string}\n-----END PUBLIC KEY-----\n"
+  end
+
+  defp save_to_tmp(public_key) do
+    filename = SecureRandom.uuid
+    {:ok, file} = File.open "/tmp/#{filename}", [:write]
+    IO.binwrite file, public_key
+    File.close file
+    filename
   end
 end
